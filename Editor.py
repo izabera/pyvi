@@ -1,5 +1,7 @@
 from Buffer import Buffer
 from Handler import Handler
+import curses
+from Errors import KeyChainError
 
 class Cursor:
   def __init__(self,x=0,y=0):
@@ -25,14 +27,17 @@ def linepad(line,width):
   else:
     return line
 
-
 class Editor:
   def __init__(self,h,w):
     self.win = Window(top=0,x=w,y=h)
     self.buffer = Buffer()
+    self.filename = ""
     self.cursor = Cursor()
     self.mode = "normal"
+    self.exit = False
     self.handlers = Handler()
+    self.command = ""
+    self.message = ""
   def __str__(self):
     return "An Editor"
 
@@ -54,9 +59,12 @@ class Editor:
     vlines = [linepad(line,self.win.x) for line in slines]
     return vlines
   def statline(self):
-    line = "%s   %s" % (self.mode,self.cursor)
-    line = line + " "
-    line = " " * (self.win.x - len(line) - 1) + line
+    if self.command:
+      left = self.command
+    else:
+      left = self.message
+    right = "%s  %s " % (self.mode,self.cursor)
+    line = left + " " * (self.win.x - len(left) - len(right) - 1) + right
     return line
   def set_win(self,firstline,height,width):
     if height < 2 or width < 10 or firstline < 0:
@@ -115,3 +123,24 @@ class Editor:
     elif self.cursor.y >= self.win.top + self.win.y:
       self.move_cursor(row=self.win.top + self.win.y - 1)
 
+
+  def handle_key(self,key):
+    self.message = ""
+    self.command = self.command + key
+    if self.handlers.mode[self.mode].has_key(self.command):
+      self.handlers.call_handler(self,self.mode,self.command)
+      self.command = ""
+    else:
+      keys = self.handlers.mode[self.mode].keys()
+      for key in keys:
+        if key.startswith(self.command):
+          return
+      attempted = self.command
+      self.command = ""
+      raise KeyChainError, "The keychain '%s' doesn't belong to any existing maps." % attempted
+
+
+
+
+
+    

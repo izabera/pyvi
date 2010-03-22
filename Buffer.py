@@ -52,7 +52,7 @@ class Buffer:
       raise IndexError, "Line %d is not within the buffer." % lnum
     if "\n" in line[:-1]:
       raise Exception, "Lines cannot contain internal newline characters."
-    if line[-1] != "\n":
+    if not line or line[-1] != "\n":
       line = line + "\n" 
     self.lines.insert(lnum,line)
   def remove_line(self,lnum):
